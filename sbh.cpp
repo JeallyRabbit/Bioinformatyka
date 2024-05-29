@@ -6,6 +6,8 @@
 #include <string>
 #include <ctime>
 #include <deque>
+#include <algorithm>
+#include <random>
 
 using namespace std;
 
@@ -57,10 +59,10 @@ void addEdges(unordered_map<string, OligoNode*>& graph, int k) {
 vector<string> simulateErrors(const vector<string>& oligonucleotides, int n, bool positive, bool negative, float positive_percentage,
     float negative_percentage) {
     int positive_number = oligonucleotides.size() * positive_percentage;
-    cout << "positive_number: " << positive_number << endl;
+    //cout << "positive_number: " << positive_number << endl;
     
     int negative_number = oligonucleotides.size() * negative_percentage;
-    cout << "negative_number: " << negative_number << endl;
+    //cout << "negative_number: " << negative_number << endl;
     vector<string> erroneous= oligonucleotides;
     unordered_set<string> seen;
 
@@ -75,32 +77,11 @@ vector<string> simulateErrors(const vector<string>& oligonucleotides, int n, boo
     for (int i = 0; i < positive_number; i++)
     {
         string random_oligo = oligonucleotides[rand() % oligonucleotides.size()];
-        cout << "adding: " << random_oligo << endl;
+       // cout << "adding: " << random_oligo << endl;
         erroneous.push_back(random_oligo);
     }
 
-    
 
-    /*for (const auto& oligo : oligonucleotides) {
-        if (negative && rand() % 2 == 0) continue; // Simulate negative error by omitting the oligo
-        erroneous.push_back(oligo);
-        seen.insert(oligo);
-    }
-    if (positive) {
-        for (int i = 0; i < positive_number; ++i) {
-            string random_oligo = oligonucleotides[rand() % oligonucleotides.size()];
-            if (seen.find(random_oligo) == seen.end()) {
-                erroneous.push_back(random_oligo);
-                seen.insert(random_oligo);
-            }
-        }
-    }*/
-    for (int i = 0; i < erroneous.size(); i++)
-    {
-        cout << erroneous[i] << " ";
-    }
-    cout << endl;
-    cout << erroneous.size() << endl;
     return erroneous;
 }
 
@@ -144,7 +125,7 @@ string generateDNASequence(int n) {
 int main() {
     srand(time(0)); // Seed for random number generation
 
-    int n = 100; // Length of DNA
+    int n = 20; // Length of DNA
     int k = 3; // Length of oligonucleotides
 
     // Provided DNA sequence for testing
@@ -162,11 +143,7 @@ int main() {
         cout << oligo << " ";
     }
     cout << endl;
-
-
-    // Generate the graph
-    auto graph = generateGraph(oligonucleotides);
-    addEdges(graph, k);
+    
 
     // Debug graph
     /*cout << "Graph:" << endl;
@@ -182,7 +159,21 @@ int main() {
     // Simulate errors
     bool positive = true;
     bool negative = true;
-    auto erroneous_oligos = simulateErrors(oligonucleotides, n, positive, negative,0.2,0.2);
+    auto erroneous_oligos = simulateErrors(oligonucleotides, n, positive, negative,0.1,0.1);
+    cout << "Generated erroneous_oligos:" << endl;
+    for (const auto& oligo : erroneous_oligos) {
+        cout << oligo << " ";
+    }
+    cout << endl;
+
+    std::random_shuffle(std::begin(erroneous_oligos), std::end(erroneous_oligos));
+
+    cout << "Generated shuffled erroneous_oligos:" << endl;
+    for (const auto& oligo : erroneous_oligos) {
+        cout << oligo << " ";
+    }
+    cout << endl;
+    
 
     // Generate the graph from erroneous oligos
     auto erroneous_graph = generateGraph(erroneous_oligos);
@@ -202,6 +193,6 @@ int main() {
     // Reconstruct the DNA sequence
     string dna_sequence_reconstructed = reconstructDNA(erroneous_graph, start_oligo, k);
     cout << "Reconstructed DNA sequence: " << dna_sequence_reconstructed << endl;
-
+    cout << dna_sequence_reconstructed[0] << endl;
     return 0;
 }
