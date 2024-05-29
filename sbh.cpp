@@ -54,23 +54,53 @@ void addEdges(unordered_map<string, OligoNode*>& graph, int k) {
 }
 
 // Function to simulate errors (positive and negative)
-vector<string> simulateErrors(const vector<string>& oligonucleotides, int n, bool positive, bool negative) {
-    vector<string> erroneous;
+vector<string> simulateErrors(const vector<string>& oligonucleotides, int n, bool positive, bool negative, float positive_percentage,
+    float negative_percentage) {
+    int positive_number = oligonucleotides.size() * positive_percentage;
+    cout << "positive_number: " << positive_number << endl;
+    
+    int negative_number = oligonucleotides.size() * negative_percentage;
+    cout << "negative_number: " << negative_number << endl;
+    vector<string> erroneous= oligonucleotides;
     unordered_set<string> seen;
-    for (const auto& oligo : oligonucleotides) {
+
+    //adding negative errors
+    for (int i = 0; i < negative_number; i++)
+    {
+       // cout << "removing: " << erroneous[erroneous.begin() + (rand() % erroneous.size())] << endl;
+        erroneous.erase(erroneous.begin() + (rand() % erroneous.size()));
+    }
+
+    //adding positive errors
+    for (int i = 0; i < positive_number; i++)
+    {
+        string random_oligo = oligonucleotides[rand() % oligonucleotides.size()];
+        cout << "adding: " << random_oligo << endl;
+        erroneous.push_back(random_oligo);
+    }
+
+    
+
+    /*for (const auto& oligo : oligonucleotides) {
         if (negative && rand() % 2 == 0) continue; // Simulate negative error by omitting the oligo
         erroneous.push_back(oligo);
         seen.insert(oligo);
     }
     if (positive) {
-        for (int i = 0; i < n / 10; ++i) {
+        for (int i = 0; i < positive_number; ++i) {
             string random_oligo = oligonucleotides[rand() % oligonucleotides.size()];
             if (seen.find(random_oligo) == seen.end()) {
                 erroneous.push_back(random_oligo);
                 seen.insert(random_oligo);
             }
         }
+    }*/
+    for (int i = 0; i < erroneous.size(); i++)
+    {
+        cout << erroneous[i] << " ";
     }
+    cout << endl;
+    cout << erroneous.size() << endl;
     return erroneous;
 }
 
@@ -126,13 +156,13 @@ int main() {
 
     // Generate oligonucleotides from the DNA sequence
     vector<string> oligonucleotides = generateOligonucleotides(dna_sequence, k);
-    /*
+    
     cout << "Generated Oligonucleotides:" << endl;
     for (const auto& oligo : oligonucleotides) {
         cout << oligo << " ";
     }
-    cout << endl;*/
-    
+    cout << endl;
+
 
     // Generate the graph
     auto graph = generateGraph(oligonucleotides);
@@ -147,12 +177,12 @@ int main() {
         }
         cout << endl;
     }*/
-    
+
 
     // Simulate errors
     bool positive = true;
     bool negative = true;
-    auto erroneous_oligos = simulateErrors(oligonucleotides, n, positive, negative);
+    auto erroneous_oligos = simulateErrors(oligonucleotides, n, positive, negative,0.2,0.2);
 
     // Generate the graph from erroneous oligos
     auto erroneous_graph = generateGraph(erroneous_oligos);
@@ -167,7 +197,7 @@ int main() {
         }
         cout << endl;
     }*/
-    
+
 
     // Reconstruct the DNA sequence
     string dna_sequence_reconstructed = reconstructDNA(erroneous_graph, start_oligo, k);
