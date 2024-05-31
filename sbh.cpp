@@ -1,198 +1,153 @@
-// sbh_algorithm.cpp
 #include <iostream>
-#include <vector>
-#include <unordered_set>
-#include <unordered_map>
 #include <string>
-#include <ctime>
-#include <deque>
+#include <vector>
 #include <algorithm>
-#include <random>
 
 using namespace std;
 
-// Data structure to represent an oligonucleotide and its connections
-struct OligoNode {
-    string sequence;
-    unordered_set<OligoNode*> edges;
-    OligoNode(string seq) : sequence(seq) {}
-};
+// Funkcja obliczająca odległość Levenshteina między dwoma ciągami
+int levenshteinDistance(const string& s1, const string& s2) {
+    int m = s1.size();
+    int n = s2.size();
+    vector<vector<int>> dp(m + 1, vector<int>(n + 1, 0));
 
-// Function to generate oligonucleotides from a DNA sequence
-vector<string> generateOligonucleotides(const string& dna_sequence, int k) {
-    vector<string> oligonucleotides;
-    for (size_t i = 0; i <= dna_sequence.length() - k; ++i) {
-        oligonucleotides.push_back(dna_sequence.substr(i, k));
-    }
-    return oligonucleotides;
-}
-
-// Function to generate the graph from the oligonucleotide sequences
-unordered_map<string, OligoNode*> generateGraph(const vector<string>& oligonucleotides) {
-    unordered_map<string, OligoNode*> graph;
-    for (const auto& oligo : oligonucleotides) {
-        if (graph.find(oligo) == graph.end()) {
-            graph[oligo] = new OligoNode(oligo);
+    for (int i = 0; i <= m; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            if (i == 0)
+                dp[i][j] = j;
+            else if (j == 0)
+                dp[i][j] = i;
+            else if (s1[i - 1] == s2[j - 1])
+                dp[i][j] = dp[i - 1][j - 1];
+            else
+                dp[i][j] = 1 + min({dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]});
         }
     }
-    return graph;
+    return dp[m][n];
 }
 
-// Function to add edges between oligonucleotides
-void addEdges(unordered_map<string, OligoNode*>& graph, int k) {
-    for (auto& item : graph) {
-        const string& seq = item.first;
-        OligoNode* node = item.second;
-        string prefix = seq.substr(0, k - 1);
-        for (auto& other_item : graph) {
-            const string& other_seq = other_item.first;
-            OligoNode* other_node = other_item.second;
-            string suffix = other_seq.substr(1, k - 1);
-            if (prefix == suffix) {
-                node->edges.insert(other_node);
-            }
-        }
-    }
-}
-
-// Function to simulate errors (positive and negative)
-vector<string> simulateErrors(const vector<string>& oligonucleotides, int n, bool positive, bool negative, float positive_percentage,
-    float negative_percentage) {
-    int positive_number = oligonucleotides.size() * positive_percentage;
-    //cout << "positive_number: " << positive_number << endl;
-    
-    int negative_number = oligonucleotides.size() * negative_percentage;
-    //cout << "negative_number: " << negative_number << endl;
-    vector<string> erroneous= oligonucleotides;
-    unordered_set<string> seen;
-
-    //adding negative errors
-    for (int i = 0; i < negative_number; i++)
-    {
-       // cout << "removing: " << erroneous[erroneous.begin() + (rand() % erroneous.size())] << endl;
-        erroneous.erase(erroneous.begin() + (rand() % erroneous.size()));
-    }
-
-    //adding positive errors
-    for (int i = 0; i < positive_number; i++)
-    {
-        string random_oligo = oligonucleotides[rand() % oligonucleotides.size()];
-       // cout << "adding: " << random_oligo << endl;
-        erroneous.push_back(random_oligo);
-    }
-
-
-    return erroneous;
-}
-
-// Function to reconstruct the DNA sequence using Eulerian path approach
-string reconstructDNA(unordered_map<string, OligoNode*>& graph, const string& start_oligo, int k) {
-    string dna_sequence = start_oligo;
-    OligoNode* current = graph[start_oligo];
-    unordered_set<OligoNode*> visited;
-    deque<OligoNode*> dfs_stack;
-    dfs_stack.push_back(current);
-
-    while (!dfs_stack.empty()) {
-        OligoNode* node = dfs_stack.back();
-        if (node->edges.empty()) {
-            dfs_stack.pop_back();
-            if (!dfs_stack.empty()) {
-                dna_sequence += dfs_stack.back()->sequence.back();
-            }
-        }
-        else {
-            auto neighbor = *node->edges.begin();
-            node->edges.erase(neighbor);
-            dfs_stack.push_back(neighbor);
-            dna_sequence += neighbor->sequence.back();
-        }
-    }
-
-    return dna_sequence;
-}
-
-string generateDNASequence(int n) {
-    string dna_sequence;
-    const char nucleotides[] = { 'A', 'T', 'G', 'C' };
+// funkcja generująca ciąg DNA o długości n
+string generateDNA(int n) {
+    string dna = "";
+    string bases = "ATCG";
     for (int i = 0; i < n; ++i) {
-        dna_sequence += nucleotides[rand() % 4];
+        int randIndex = rand() % 4; // losowy indeks do wyboru z bases
+        dna += bases[randIndex];
     }
-    return dna_sequence;
+    return dna;
 }
 
+// funkcja dzieląca ciąg DNA na fragmenty o długości k
+vector<string> cutDNA(string dna, int k) {
+    vector<string> fragments;
+    for (int i = 0; i <= dna.length() - k; ++i) {
+        fragments.push_back(dna.substr(i, k));
+    }
+    return fragments;
+}
+
+// funkcja dodająca błędy pozytywne i negatywne
+string addErrors(string dna, double p_positive, double p_negative) {
+    // Dodawanie błędów pozytywnych
+    for (int i = 0; i < dna.length(); ++i) {
+        if (rand() / double(RAND_MAX) < p_positive) {
+            int randIndex = rand() % 4; // losowy indeks do wyboru z bases
+            dna.insert(i, 1, "ATCG"[randIndex]);
+        }
+    }
+    // Dodawanie błędów negatywnych
+    for (int i = dna.length() - 1; i >= 0; --i) {
+        if (rand() / double(RAND_MAX) < p_negative) {
+            dna.erase(i, 1);
+        }
+    }
+    return dna;
+}
+
+// funkcja znajdująca scieżkę przechodzącą przez wszystkie krawędzie w grafie
+void findPath(vector<vector<int>>& graph, vector<int>& path, vector<int>& visited, int current) {
+    for (int i = 0; i < graph.size(); ++i) {
+        if (graph[current][i] > 0 && visited[i] == 0) {
+            visited[i] = 1;
+            findPath(graph, path, visited, i);
+            path.push_back(i);
+        }
+    }
+}
 
 int main() {
-    srand(time(0)); // Seed for random number generation
+    srand(time(0));
 
-    int n = 20; // Length of DNA
-    int k = 3; // Length of oligonucleotides
+    // Parametry
+    int n = 30; // długość DNA
+    int k = 3;  // długość fragmentów
+    double p_positive = 0.1; // prawdopodobieństwo błędu pozytywnego
+    double p_negative = 0.1; // prawdopodobieństwo błędu negatywnego
 
-    // Provided DNA sequence for testing
-    string dna_sequence = generateDNASequence(n);
-    cout << "Generated DNA sequence: " << dna_sequence << endl;
+    // Krok 1: Generowanie DNA
+    string originalDNA = generateDNA(n);
 
-    // Use the first k nucleotides as the starting oligonucleotide
-    string start_oligo = dna_sequence.substr(0, k);
+    // Krok 2: Dzielenie DNA na fragmenty
+    vector<string> fragments = cutDNA(originalDNA, k);
 
-    // Generate oligonucleotides from the DNA sequence
-    vector<string> oligonucleotides = generateOligonucleotides(dna_sequence, k);
-    
-    cout << "Generated Oligonucleotides:" << endl;
-    for (const auto& oligo : oligonucleotides) {
-        cout << oligo << " ";
+    // Krok 3: Dodawanie błędów
+    for (int i = 0; i < fragments.size(); ++i) {
+        fragments[i] = addErrors(fragments[i], p_positive, p_negative);
     }
-    cout << endl;
-    
 
-    // Debug graph
-    /*cout << "Graph:" << endl;
-    for (const auto& item : graph) {
-        cout << "Node: " << item.first << " Edges: ";
-        for (const auto neighbor : item.second->edges) {
-            cout << neighbor->sequence << " ";
+    // Krok 4: Tworzenie grafu
+    vector<vector<int>> graph(fragments.size(), vector<int>(fragments.size(), 0));
+    for (int i = 0; i < fragments.size(); ++i) {
+        for (int j = 0; j < fragments.size(); ++j) {
+            if (i != j) {
+                int commonPrefix = 0;
+                while (commonPrefix < k && fragments[i][commonPrefix] == fragments[j][commonPrefix]) {
+                    commonPrefix++;
+                }
+                graph[i][j] = k - commonPrefix;
+            }
         }
-        cout << endl;
-    }*/
-
-
-    // Simulate errors
-    bool positive = true;
-    bool negative = true;
-    auto erroneous_oligos = simulateErrors(oligonucleotides, n, positive, negative,0.1,0.1);
-    cout << "Generated erroneous_oligos:" << endl;
-    for (const auto& oligo : erroneous_oligos) {
-        cout << oligo << " ";
     }
-    cout << endl;
 
-    std::random_shuffle(std::begin(erroneous_oligos), std::end(erroneous_oligos));
+    // Krok 5: Znajdowanie ścieżki przez graf
+    vector<int> path;
+    vector<int> visited(fragments.size(), 0);
+    visited[0] = 1;
+    findPath(graph, path, visited, 0);
+    path.push_back(0); // Dodaj pierwszy wierzchołek, aby zamknąć pętlę
 
-    cout << "Generated shuffled erroneous_oligos:" << endl;
-    for (const auto& oligo : erroneous_oligos) {
-        cout << oligo << " ";
+    // Krok 6: Odtwarzanie DNA z pierwszych liter wierzchołków
+    string reconstructedDNA = "";
+    for (int i = path.size() - 1; i >= 0; --i) {
+        reconstructedDNA += fragments[path[i]].substr(0, 1);
     }
-    cout << endl;
-    
 
-    // Generate the graph from erroneous oligos
-    auto erroneous_graph = generateGraph(erroneous_oligos);
-    addEdges(erroneous_graph, k);
-
-    // Debug erroneous graph
-    /*cout << "Erroneous Graph:" << endl;
-    for (const auto& item : erroneous_graph) {
-        cout << "Node: " << item.first << " Edges: ";
-        for (const auto neighbor : item.second->edges) {
-            cout << neighbor->sequence << " ";
+    // Krok 7: Odtwarzanie komplementarnej nici DNA
+    string complementaryDNA = "";
+    for (char base : reconstructedDNA) {
+        switch (base) {
+            case 'A':
+                complementaryDNA += 'T';
+                break;
+            case 'T':
+                complementaryDNA += 'A';
+                break;
+            case 'C':
+                complementaryDNA += 'G';
+                break;
+            case 'G':
+                complementaryDNA += 'C';
+                break;
         }
-        cout << endl;
-    }*/
+    }
 
+    // Krok 8: Wypisywanie wyników
+    cout << "Pierwotne DNA: " << originalDNA << endl;
+    cout << "Zrekonstruowane DNA: " << reconstructedDNA << endl;
+    cout << "Komplementarne do zrekonstruowanego: " << complementaryDNA << endl;
 
-    // Reconstruct the DNA sequence
-    string dna_sequence_reconstructed = reconstructDNA(erroneous_graph, start_oligo, k);
-    cout << "Reconstructed DNA sequence: " << dna_sequence_reconstructed << endl;
-    cout << dna_sequence_reconstructed[0] << endl;
+     cout << "Odległość Levenshteina między zrekonstruowanym a pierwotnym DNA: "
+         << levenshteinDistance(reconstructedDNA, originalDNA) << endl;
+
     return 0;
 }
