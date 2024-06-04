@@ -1,9 +1,9 @@
-//SBH with loops for testing 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <algorithm>
 #include <time.h>
+#include <fstream>
 
 using namespace std;
 
@@ -80,6 +80,10 @@ void findPath(vector<vector<int>>& graph, vector<int>& path, vector<int>& visite
 int main() {
     srand(time(0));
 
+    fstream plik;
+    plik.open("bioinf.csv");
+    plik<<"n;k;bledy_pozotywne;bledy_negatywne;miara_levenshteina\n";
+
     for(int n=300;n<=700;n+=20)
     {
         for(int k=6;k<=10;k++)
@@ -145,8 +149,8 @@ int main() {
                                 break;
                         }
                     }
-
-                    cout<<n<<" "<<k<<" "<<p_positive<<" "<<p_negative<<" "<<levenshteinDistance(reconstructedDNA, originalDNA)<<endl;
+                    plik<<n<<";"<<k<<";"<<p_positive<<";"<<p_negative<<";"<<levenshteinDistance(reconstructedDNA, originalDNA)<<"\n";
+                    //cout<<n<<" "<<k<<" "<<p_positive<<" "<<p_negative<<" "<<levenshteinDistance(reconstructedDNA, originalDNA)<<endl;
 
                 }
             }
